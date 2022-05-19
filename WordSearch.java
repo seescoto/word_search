@@ -14,7 +14,9 @@ public class WordSearch {
     private String title = "Word Search"; //can be changed later
 
     private final int MINSIZE = 10;
-    private final char DELIM = '+'; //marks empty space in the grid
+    private final int MAXSIZE = 25;
+    private final char DELIM = '.'; //marks empty space in the grid
+    private final int MAXTRIES = 25; //number of times try to place a word before you give up
 
     //constructor methods
     WordSearch(int size) {
@@ -72,19 +74,69 @@ public class WordSearch {
     and tell them to expand the grid or put fewer words in next time
     place word gives a boolean - true if placed, false if not placed
     */
+    public void setSearchGrid() {
+        int numTries;
+        boolean placed;
+
+        //place words
+        for (String word : wordList) {
+
+            //try to place words
+            numTries = 0;
+            placed = false;
+            while (numTries < MAXTRIES & !placed) {
+                numTries++;
+                placed = placeWord(word);
+            }
+            //if it passes that and still isn't placed, tell the user
+            if(!placed) {
+                System.out.println("The word " + word + " could not be placed in the search grid.");
+                System.out.println("Please increase the size of the grid or use fewer words in the list.");
+            }
+        }
+
+        //set rest of spots up with 0
+
+
+
+    }
+
+
     public boolean placeWord(String word) {
+        //choose a random place for the word, see if it fits, if it does place it, if not return false
+        boolean placed = false;
 
-    }
-
-    private String getDirection() {
-        //returns a random direction for the word to go in the crossword
-        //left, right, up, down, left up, left down, right up, right down (8 options)
         Random rand = new Random();
-        int num = rand.nextInt(8);
-        String[] directions = {"l", "r", "u", "d", "lu", "ld", "ru", "rd"};
-        return directions[num];
+        int row = rand.nextInt(grid.length);
+        int col = rand.nextInt(grid[0].length);
+        String direction = getDirection();
 
+        if (wordFits(word, row, col, direction)) {
+            place(word, row, col, direction);
+            placed = true;
+        }
+
+        return placed;
     }
+
+    private void place(String word, int row, int col, String direction) {
+        //places the word in the space and direction on the grid
+        //recursive method
+
+        //base case = do nothing, word length is 0 then all letters have been placed
+
+        //non-base case = place the first letter and then place the rest of the word
+        if (word.length() > 0) {
+            grid[row][col] = word.charAt(0);
+
+            String newWord = word.substring(1);
+            int newRow = getNextRow(row, direction);
+            int newCol = getNextCol(col, direction);
+
+            place(newWord, newRow, newCol, direction);
+        }
+    }
+
 
     public boolean wordFits(String word, int row, int col, String direction) {
         //returns if the word fits in the space
@@ -97,9 +149,10 @@ public class WordSearch {
         }
         else {
             //get word without the first letter and check at the next spot
-            newWord = word.subString(1);
-            newRow = getNextRow(row, direction);
-            newCol = getNextCol(col, direction)
+            String newWord = word.substring(1);
+            int newRow = getNextRow(row, direction);
+            int newCol = getNextCol(col, direction);
+
             fits = charFits(word.charAt(0), row, col) & wordFits(newWord, newRow, newCol, direction);
         }
 
@@ -107,7 +160,23 @@ public class WordSearch {
     }
 
     private boolean charFits(char letter, int row, int col) {
-        
+        boolean fits;
+
+        //check that the row and column are valid, if not return false
+        if (row >= grid.length | row < 0) {
+            fits = false;
+        }
+        else if (col >= grid[row].length | col < 0) {
+            fits = false;
+        }
+
+        // then check if the space is either DELIM or the char given
+        else {
+            fits = (grid[row][col] == DELIM | grid[row][col] == letter);
+        }
+
+        return fits;
+
     }
 
 
@@ -115,20 +184,21 @@ public class WordSearch {
     //returns string of char grid (formatted)
     @Override
     public String toString() {
-        String mssg = "|";
-        int width = grid.length * 4; //edit later when working with real words
+        int width = grid.length * 3 + 2; //edit later when working with real words
 
 
         //print top line
+        String mssg = "|";
         for (int i = 0; i < width; i++) {
             mssg += "-";
         }
+        mssg += "|" + "\n";
 
         //print all lines
         for (int row = 0; row < grid.length; row++) {
-            mssg += "|" + "\t";
+            mssg += "|" + "  ";
             for (int col = 0; col < grid[row].length; col++) {
-                mssg += grid[row][col] + "\t";
+                mssg += grid[row][col] + "  ";
             }
             mssg += "|" + "\n";
         }
@@ -138,30 +208,39 @@ public class WordSearch {
         for (int i = 0; i < width; i++) {
             mssg += "-";
         }
-
         mssg += "|" + "\n";
 
         //print word list
         Iterator<String> iter = wordList.iterator();
+        int i = 0;
         while (iter.hasNext()) {
-            mssg += iter.next() + "\t\t";
+            i++;
+            mssg += iter.next() + "\t\t\t";
+            if (i == 3) {
+                i = 0;
+                mssg += "\n";
+            }
         }
 
         return mssg;
     }
 
-
-    //helper methods
+    //
+    //helper methods!
+    //
 
     //makes the word search bigger if it's less than h x h where h = maxWordSize + 10
     private void resize() {
-        if (grid.length < (maxWordSize + 10)) {
-            grid = newGrid(maxWordSize + 10)
+
+        if (grid.length < (maxWordSize + wordList.size()/2) & grid.length <= MAXSIZE) {
+            grid = newGrid(maxWordSize + (wordList.size())/2);
         }
     }
 
     //creates the size x size word grid and fills with given delimeter to mark as empty
     private char[][] newGrid(int size) {
+
+        if (size > MAXSIZE) size = MAXSIZE;
 
         char[][] g = new char[size][size];
         for (int i = 0; i < size; i++) {
@@ -171,13 +250,6 @@ public class WordSearch {
         }
         return g;
 
-    }
-
-    //makes the word search bigger if it's less than h x h where h = maxWordSize + 10
-    private void resize() {
-        if (grid.length < (maxWordSize + 10)) {
-            grid = newGrid(maxWordSize + 10)
-        }
     }
 
     //returns the next row to go to given a direction
@@ -219,7 +291,18 @@ public class WordSearch {
             newCol = currCol + 1;
         }
 
-        return newRow;
+        return newCol;
+    }
+
+    //returns a random direction for the word to go in the crossword
+    //left, right, up, down, left up, left down, right up, right down (8 options)
+    private String getDirection() {
+
+        Random rand = new Random();
+        int num = rand.nextInt(8);
+        String[] directions = {"l", "r", "u", "d", "lu", "ld", "ru", "rd"};
+        return directions[num];
+
     }
 
 
