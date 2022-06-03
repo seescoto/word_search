@@ -4,7 +4,7 @@ makes a word search grid that can be printed out and/or put into a txt file
 gives whatever words given
 */
 
-import java.util.*; //array list, iterator, etc
+import java.util.*; //array list, random, etc
 
 public class WordSearch {
 
@@ -13,10 +13,16 @@ public class WordSearch {
     private int maxWordSize = 0;
     private String title = "Word Search"; //can be changed later
 
+    //minsize and maxsize of grid
     private final int MINSIZE = 10;
     private final int MAXSIZE = 25;
-    private final char DELIM = '.'; //marks empty space in the grid
+    private final char DELIM = '.'; //marks an empty space in the grid
     private final int MAXTRIES = 25; //number of times try to place a word before you give up
+
+    //filling in the grid
+    private String charsToFill = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    //private String charsToFill = "0123456789";
+    private char[] ctf = charsToFill.toCharArray();
 
     //constructor methods
     WordSearch(int size) {
@@ -46,7 +52,7 @@ public class WordSearch {
     public void setWordList(String[] words) {
         //set initial word list
         for (String w : words) {
-            wordList.add(w);
+            wordList.add(w.toUpperCase());
             //if word is longer than all the ones before, change maxWordSize
             if (w.length() > maxWordSize) {
                 maxWordSize = w.length();
@@ -58,7 +64,7 @@ public class WordSearch {
 
     //add words one by one
     public void addToWordList(String newWord) {
-        wordList.add(newWord);
+        wordList.add(newWord.toUpperCase());
         //check if need to change maxWordSize, if so resize
         if (newWord.length() > maxWordSize) {
             maxWordSize = newWord.length();
@@ -67,16 +73,22 @@ public class WordSearch {
 
     }
 
+    public void setTitle(String newTitle) {
+        title = newTitle;
+    }
+
     /**
     choose a random spot for word, choose direction, check if word fits there. if it does, place it and
-    remove from the wordList, if not try again (up to 25 times)
-    if 25 times have passed, write a little warning to the user that the word wasnt put into the crossword
+    remove from the wordList, if not try again (up to x times)
+    if x times have passed, write a little warning to the user that the word wasnt put into the crossword
     and tell them to expand the grid or put fewer words in next time
     place word gives a boolean - true if placed, false if not placed
     */
     public void setSearchGrid() {
         int numTries;
         boolean placed;
+        Random rand = new Random();
+        ArrayList<String> unUsedWords = new ArrayList<String>();
 
         //place words
         for (String word : wordList) {
@@ -88,16 +100,32 @@ public class WordSearch {
                 numTries++;
                 placed = placeWord(word);
             }
-            //if it passes that and still isn't placed, tell the user
-            if(!placed) {
+            //if it passes that and still isn't placed, tell the user and remove the word from the list
+            if (!placed) {
                 System.out.println("The word " + word + " could not be placed in the search grid.");
                 System.out.println("Please increase the size of the grid or use fewer words in the list.");
+                //wordList.removeIf(w -> w.equalsIgnoreCase(word));
+
+                //add to list of words to remove and remove outside of for loop
+                unUsedWords.add(word);
+
             }
         }
+        //any words that weren't used, take out of wordlist
+        for (String w : unUsedWords) {
+            wordList.remove(w);
+        }
 
-        //set rest of spots up with 0
 
-
+        //fill rest of spots up with random characters
+        for (int r = 0; r < grid.length; r++) {
+            for (int c = 0; c < grid[r].length; c++) {
+                if (grid[r][c] == DELIM) {
+                    int val = rand.nextInt(ctf.length);
+                    grid[r][c] = ctf[val];
+                }
+            }
+        }
 
     }
 
@@ -110,6 +138,9 @@ public class WordSearch {
         int row = rand.nextInt(grid.length);
         int col = rand.nextInt(grid[0].length);
         String direction = getDirection();
+
+        //get word without any spaces
+        word = word.replace(" ", "");
 
         if (wordFits(word, row, col, direction)) {
             place(word, row, col, direction);
@@ -186,9 +217,11 @@ public class WordSearch {
     public String toString() {
         int width = grid.length * 3 + 2; //edit later when working with real words
 
+        //print title
+        String mssg = "\t\t\t\t" + title + "\n";
 
         //print top line
-        String mssg = "|";
+        mssg += "|";
         for (int i = 0; i < width; i++) {
             mssg += "-";
         }
@@ -211,14 +244,18 @@ public class WordSearch {
         mssg += "|" + "\n";
 
         //print word list
+        Collections.sort(wordList);
         Iterator<String> iter = wordList.iterator();
         int i = 0;
         while (iter.hasNext()) {
             i++;
-            mssg += iter.next() + "\t\t\t";
+            mssg += iter.next();
             if (i == 3) {
                 i = 0;
                 mssg += "\n";
+            }
+            else {
+                mssg += "\t\t\t";
             }
         }
 
@@ -229,7 +266,7 @@ public class WordSearch {
     //helper methods!
     //
 
-    //makes the word search bigger if it's less than h x h where h = maxWordSize + 10
+    //makes the word search bigger if it's less than h x h where h = maxWordSize + 1/2 word list length
     private void resize() {
 
         if (grid.length < (maxWordSize + wordList.size()/2) & grid.length <= MAXSIZE) {

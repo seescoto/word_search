@@ -5,8 +5,7 @@ compile the programs in comp.txt with `javac @comp.txt` and then `java WordDrive
 it will prompt you for:
 
 - a .txt file to write to
-- an (optional) size of the word search. if none is inputted, the size will be generated for you
 - words that you would like to input into the word search
-- an (optional) title. if none is inputted, the title will be "Word Search"
+- a title
 
-it will return a .txt file with your word search, title, and list of words for you to print out.
+it will then print your wordsearch to the screen and ask you if you'd like to save it to the .txt file you specified earlier. you will be asked if you'd like to create another word search.
